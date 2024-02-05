@@ -1,1 +1,2 @@
-# Data-analysis-on-Indian-Census-2011nsus
+# Data-analysis-on-Indian-Census-2011
+I collected data for the Indian Census 2011 from Wikipedia and stored it in an Excel file. Then, I imported the data into Microsoft SQL Server. To analyze the data, I used various SQL queries, including basic, intermediate, and advanced level queries. The main SQL clauses I utilized were AVG (for calculating averages), GROUP BY (for grouping data), INNER JOIN (for combining data from different tables), and aggregate functions (to perform calculations on groups of data). These queries helped me extract different types of information for a comprehensive analysis.
