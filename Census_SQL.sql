@@ -1,115 +1,91 @@
-select * from Data1;
+-- Selecting all data from Data1 and Data2
 
-select * from Data2;
+SELECT * FROM Data1;
+SELECT * FROM Data2;
 
 -- Creating blank table same as Data1
 
-SELECT * INTO NewTable FROM Data1 WHERE 1=2;
+CREATE TABLE NewTable AS SELECT * FROM Data1 WHERE 1=2;
 
-Select * from NewTable
+-- Count the number of rows into our dataset
 
--- count the number of rows into our dataset
+SELECT COUNT(*) FROM Data1;
+SELECT COUNT(*) FROM Data2;
 
-select COUNT(*) from Data1
-select COUNT(*) from Data2
+-- Dataset for 'Chhattisgarh', 'Maharashtra'
 
--- dataset for 'Chhattisgarh' ,'Maharashtra'
+SELECT * FROM Data1 WHERE State IN ('Chhattisgarh', 'Maharashtra');
 
-SELECT * from Data1 where State in ('Chhattisgarh' ,'Maharashtra')
+-- Population of India
 
--- population of India
+SELECT SUM(Population) AS Population FROM Data2;
 
-SELECT SUM(Population) as Population from Data2
+-- Avg growth of state
 
--- avg growth of state 
+SELECT State, AVG(Growth) * 100 AS avg_growth FROM Data1 GROUP BY State;
 
-Select State, AVG(Growth)*100 avg_growth from Data1 group by State
+-- Avg sex ratio of state
 
--- avg sex ratio of state
+SELECT State, ROUND(AVG(sex_ratio), 0) AS avg_sex_ratio FROM Data1 GROUP BY State ORDER BY avg_sex_ratio DESC;
 
-SELECT State, ROUND(avg(sex_ratio),0) avg_sex_ratio from data1 group by State order by avg_sex_ratio desc
+-- Avg literacy rate of state having literacy more than 90
 
--- avg literacy rate of state having literay more than 90
- 
-SELECT State, ROUND(AVG(Literacy),0) avg_literacy_ratio from Data1 
-GROUP BY State HAVING ROUND(AVG(Literacy),0)>90 order by avg_literacy_ratio desc
+SELECT State, ROUND(AVG(Literacy), 0) AS avg_literacy_ratio FROM Data1 
+GROUP BY State HAVING ROUND(AVG(Literacy), 0) > 90 ORDER BY avg_literacy_ratio DESC;
 
--- top 3 state showing highest growth ratio
+-- Top 3 states showing highest growth ratio
 
-Select TOP 3 State, ROUND(Growth,2) Growth from Data1 order by Growth Desc;
+SELECT State, ROUND(Growth, 2) AS Growth FROM Data1 ORDER BY Growth DESC FETCH FIRST 3 ROWS ONLY;
 
+-- Bottom 3 states showing lowest sex ratio
 
+SELECT State, Sex_Ratio FROM Data1 ORDER BY Sex_Ratio ASC FETCH FIRST 3 ROWS ONLY;
 
---bottom 3 state showing lowest sex ratio
+-- Top and bottom 3 states in literacy rate
 
-Select TOP 3 State, Sex_Ratio from Data1 ORDER BY Sex_Ratio Asc
-
-
--- top and bottom 3 states in literacy state
-
-
-(Select D.State, D.Literacy from
-(Select Top 3 State, Literacy from Data1 ORDER BY Literacy DESC) D
-
+SELECT State, Literacy FROM (
+    SELECT State, Literacy FROM Data1 ORDER BY Literacy DESC FETCH FIRST 3 ROWS ONLY
+) 
 UNION
-SELECT C.State, C.Literacy from
-(Select Top 3 State, Literacy from Data1 ORDER BY Literacy ASC) C)
+SELECT State, Literacy FROM (
+    SELECT State, Literacy FROM Data1 ORDER BY Literacy ASC FETCH FIRST 3 ROWS ONLY
+);
 
+-- States starting with letter 'a' OR ending with 'b'
 
--- states starting with letter a OR ending with b
+SELECT DISTINCT State FROM Data1 WHERE LOWER(State) LIKE 'a%' OR LOWER(State) LIKE '%b';
 
-select distinct state from Data1 where lower(state) like 'a%' or lower(state) like 'b%'
+-- States starting with letter 'a' AND ending with letter 'm'
 
--- states starting with letter a AND ending with letter m
+SELECT DISTINCT State FROM Data1 WHERE LOWER(State) LIKE 'a%' AND LOWER(State) LIKE '%m';
 
-select distinct state from Data1 where lower(state) like 'a%' and lower(state) like '%m'
+-- Joining both tables
 
+SELECT * FROM Data1 D1 INNER JOIN Data2 D2 ON D1.District = D2.District;
 
--- joining both table
+-- Total males and females
 
-Select * from Data1 D1 INNER JOIN Data2 D2 ON D1.District = D2.District
+SELECT c.State AS State, SUM(c.Population) AS Population, SUM(c.Male) AS Total_Male, SUM(c.Female) AS Total_Female
+FROM (
+    SELECT b.State, b.District, b.Population, ROUND(b.Population / (b.Sex_Ratio + 1), 0) AS Male, 
+    ROUND((b.Population * b.Sex_Ratio) / (b.Sex_Ratio + 1), 0) AS Female
+    FROM (
+        SELECT D1.Sex_Ratio / 1000 AS Sex_Ratio, D2.District, D2.Population, D2.State 
+        FROM Data1 D1 JOIN Data2 D2 ON D1.District = D2.District
+    ) b
+) c 
+GROUP BY c.State;
 
---total males and females
+-- Total literacy rate
 
--- population = female + male
--- sex ratio = males/female
--- female = population - male
--- female = sex_ratio * male
--- sex_ratio * male = population - male
--- population = sex_ratio*male + male
--- population = male(sex_ratio + 1)
--- male = population/(sex_ratio + 1) -- 1
--- female = population - male
--- female = population - population/(sex_ratio + 1)
--- female = population(1-1/sex_ratio+1)
--- female = population(sex_ratio/sex_ratio + 1) --2
-
-select c.state as State, sum(c.population) as Population, sum(c.male)as Total_Male, sum(c.female) as Total_Female
-from
-(select b.State, b.District, b.population, round(b.population/(b.sex_ratioo+1),0) as male, 
-round((b.population*b.sex_ratioo)/(b.sex_ratioo +1),0) as female
-from
-(Select D1.Sex_Ratio/1000 as sex_ratioo, D2.District, D2.Population, D2.State 
-from Data1 D1, Data2 D2 where D1.District = D2.District) b)c group by c.State
-
-
--- total literacy rate
-
--- Total_Literate/Population = literacy rate
--- literate + non-literate = population
--- Total_literate = literacy rate * population     --1
--- non_literate = (1-total_literate) * population  --2
-
-
-Select c.state as State, sum(c.population) as Population, sum(c.Literate) as Literate, 
-sum(c.Non_Literate) as Non_Literate
-from
-(Select b.state, b.District, b.population, ROUND((b.Literacy_rate * b.population),0) as Literate, 
-ROUND(((1-b.Literacy_rate) * b.population),0) as Non_Literate
-from
-(Select D1.Literacy/100 as Literacy_rate, D2.District, D2.Population, D2.State 
-from Data1 D1, Data2 D2 where D1.District = D2.District) b)c
-group by c.State
-
-
-
+SELECT c.State AS State, SUM(c.Population) AS Population, SUM(c.Literate) AS Literate, 
+SUM(c.Non_Literate) AS Non_Literate
+FROM (
+    SELECT b.State, b.District, b.Population, ROUND((b.Literacy_Rate * b.Population), 0) AS Literate, 
+    ROUND(((1 - b.Literacy_Rate) * b.Population), 0) AS Non_Literate
+    FROM (
+        SELECT D1.Literacy / 100 AS Literacy_Rate, D2.District, D2.Population, D2.State 
+        FROM Data1 D1 JOIN Data2 D2 ON D1.District = D2.District
+    ) b
+) c 
+GROUP BY c.State;
